@@ -36,7 +36,8 @@ import {
   Building2,
   Home,
   Globe,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Printer
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -213,9 +214,160 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
     }
   };
 
-  // Calculations for Corporate Dashboard
-  const totalRev = orders.reduce((acc, o) => acc + o.total, 0);
+  // ============================================================
+  // ANALYTICS CALCULATIONS
+  // ============================================================
+
+  // Revenue: ONLY delivered orders count
+  const deliveredOrders = orders.filter((o) => o.status === 'delivered');
+  const totalRev = deliveredOrders.reduce((acc, o) => acc + o.total, 0);
   const totalOrdersCount = orders.length;
+
+  // Status breakdown
+  const statusCounts = {
+    pending:          orders.filter((o) => o.status === 'pending').length,
+    confirmed:        orders.filter((o) => o.status === 'confirmed').length,
+    processing:       orders.filter((o) => o.status === 'processing' as any).length,
+    shipped:          orders.filter((o) => o.status === 'shipped').length,
+    out_for_delivery: orders.filter((o) => (o.status as any) === 'out_for_delivery').length,
+    delivered:        deliveredOrders.length,
+    cancelled:        orders.filter((o) => o.status === 'cancelled').length,
+  };
+
+  // For simple SVG donut chart — percentages
+  const STATUS_PALETTE = [
+    { key: 'pending',          label: 'En attente',         color: '#F59E0B' },
+    { key: 'confirmed',        label: 'Confirmée',           color: '#3B82F6' },
+    { key: 'processing',       label: 'En préparation',      color: '#8B5CF6' },
+    { key: 'shipped',          label: 'Expédiée',            color: '#06B6D4' },
+    { key: 'out_for_delivery', label: 'En cours livraison',  color: '#F97316' },
+    { key: 'delivered',        label: 'Livrée',              color: '#10B981' },
+    { key: 'cancelled',        label: 'Annulée',             color: '#EF4444' },
+  ];
+
+  // ============================================================
+  // PRINT SLIP FUNCTION
+  // ============================================================
+  const handlePrintOrder = (o: typeof orders[0]) => {
+    const itemsRows = o.items.map((item) => `
+      <tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;">
+          ${typeof item.productName === 'object' ? (item.productName as any).fr || (item.productName as any).ar : item.productName}
+          <span style="color:#888;font-size:11px;"> (${item.weight})</span>
+        </td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">${item.quantity}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;font-family:monospace;">${item.price.toLocaleString('fr-DZ')} DA</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;font-family:monospace;font-weight:bold;">${(item.price * item.quantity).toLocaleString('fr-DZ')} DA</td>
+      </tr>
+    `).join('');
+
+    const statusLabel: Record<string, string> = {
+      pending: 'En attente', confirmed: 'Confirmée', processing: 'En préparation',
+      shipped: 'Expédiée', out_for_delivery: 'En livraison', delivered: 'Livrée', cancelled: 'Annulée'
+    };
+
+    const html = `<!DOCTYPE html><html lang="fr"><head>
+      <meta charset="UTF-8"/>
+      <title>Bon de commande ${o.id}</title>
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; color:#111; background:#fff; padding:32px; font-size:13px; }
+        @page { size: A4; margin: 20mm; }
+        @media print { body { padding:0; } }
+        .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #C89B3C; padding-bottom:20px; margin-bottom:24px; }
+        .brand h1 { font-size:22px; font-weight:900; color:#C89B3C; letter-spacing:1px; }
+        .brand p { font-size:11px; color:#666; margin-top:3px; }
+        .doc-info { text-align:right; }
+        .doc-info .title { font-size:18px; font-weight:900; text-transform:uppercase; letter-spacing:2px; color:#111; }
+        .doc-info p { font-size:11px; color:#555; margin-top:4px; }
+        .doc-info .ref { font-family:monospace; font-size:14px; font-weight:bold; color:#C89B3C; }
+        .section { margin-bottom:20px; }
+        .section-title { font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:1px; color:#888; border-bottom:1px solid #eee; padding-bottom:6px; margin-bottom:10px; }
+        .client-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .client-box { background:#FDFBF7; border:1px solid #eee; border-radius:8px; padding:12px; }
+        .client-box p { font-size:12px; color:#333; line-height:1.6; }
+        .client-box strong { color:#111; }
+        table { width:100%; border-collapse:collapse; }
+        thead tr { background:#111; color:#fff; }
+        thead th { padding:10px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+        thead th:last-child, thead th:nth-child(2), thead th:nth-child(3) { text-align:right; }
+        thead th:nth-child(2) { text-align:center; }
+        tbody tr:nth-child(even) { background:#FDFBF7; }
+        .totals { margin-left:auto; width:260px; border:1px solid #eee; border-radius:8px; overflow:hidden; }
+        .totals-row { display:flex; justify-content:space-between; padding:8px 14px; font-size:12px; border-bottom:1px solid #eee; }
+        .totals-row:last-child { background:#111; color:#C89B3C; font-weight:900; font-size:14px; border:none; }
+        .footer { margin-top:40px; border-top:1px solid #eee; padding-top:16px; text-align:center; color:#999; font-size:11px; line-height:1.7; }
+        .status-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:bold; background:#F3F4F6; color:#111; }
+      </style>
+    </head><body>
+      <div class="header">
+        <div class="brand">
+          <h1>توابل البوخاري · Épices El Boukhari</h1>
+          <p>Gdyel, Oran, Algérie &nbsp;|&nbsp; +213 781 59 10 87</p>
+          <p>contact@epices-elboukhari.com</p>
+        </div>
+        <div class="doc-info">
+          <div class="title">Bon de Commande</div>
+          <p class="ref">${o.id}</p>
+          <p>Date : <strong>${o.date}</strong></p>
+          <p>Statut : <span class="status-badge">${statusLabel[o.status] || o.status}</span></p>
+          <p>Paiement : <strong>${o.paymentMethod === 'cod' ? 'À la livraison (COD)' : 'Carte bancaire'}</strong></p>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Informations Client &amp; Livraison</div>
+        <div class="client-grid">
+          <div class="client-box">
+            <p><strong>Client :</strong> ${o.shippingAddress.fullName}</p>
+            <p><strong>Téléphone :</strong> ${o.shippingAddress.phone}</p>
+          </div>
+          <div class="client-box">
+            <p><strong>Adresse :</strong> ${o.shippingAddress.addressLine || '—'}</p>
+            <p>${o.shippingAddress.commune}, ${o.shippingAddress.wilaya}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Articles commandés</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Article</th>
+              <th style="text-align:center">Qté</th>
+              <th style="text-align:right">Prix unitaire</th>
+              <th style="text-align:right">Sous-total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsRows}</tbody>
+        </table>
+      </div>
+
+      <div class="section" style="margin-top:16px">
+        <div class="totals">
+          <div class="totals-row"><span>Sous-total articles</span><span style="font-family:monospace">${o.subtotal.toLocaleString('fr-DZ')} DA</span></div>
+          ${o.discount > 0 ? `<div class="totals-row" style="color:#10B981"><span>Remise</span><span style="font-family:monospace">-${o.discount.toLocaleString('fr-DZ')} DA</span></div>` : ''}
+          <div class="totals-row"><span>Frais de livraison</span><span style="font-family:monospace">${o.shippingFee === 0 ? 'Gratuit' : o.shippingFee.toLocaleString('fr-DZ') + ' DA'}</span></div>
+          <div class="totals-row"><span>TOTAL À PAYER</span><span style="font-family:monospace">${o.total.toLocaleString('fr-DZ')} DA</span></div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p><strong>Merci pour votre confiance !</strong></p>
+        <p>Maison Épices El Boukhari · Gdyel, Oran, Algérie · Tél: +213 781 59 10 87</p>
+        <p>Pour toute question, contactez-nous à contact@epices-elboukhari.com</p>
+      </div>
+    </body></html>`;
+
+    const win = window.open('', '_blank', 'width=800,height=900');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => { win.print(); }, 400);
+    }
+  };
 
   const handleCreateCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -818,16 +970,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         {/* ===================== OVERVIEW ANALYTICS TAB ===================== */}
         {activePanel === 'dashboard' && (
           <div className="space-y-8 animate-fade-in">
-            {/* Corporate widgets row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              
-              {/* Revenue */}
+
+            {/* KPI WIDGETS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Revenue — delivered only */}
               <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm flex items-center justify-between">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Chiffre d'affaires</span>
+                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">CA Réalisé</span>
                   <p className="text-2xl font-black text-[#C89B3C] font-mono">{formatPrice(totalRev)}</p>
                   <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
-                    <TrendingUp size={12} /> Chiffre d'affaires réel
+                    <TrendingUp size={12} /> Commandes livrées uniquement
                   </span>
                 </div>
                 <div className="w-12 h-12 bg-[#C89B3C]/10 border border-[#C89B3C]/30 text-[#C89B3C] rounded-2xl flex items-center justify-center">
@@ -838,9 +990,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               {/* Total Orders */}
               <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm flex items-center justify-between">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Commandes globales</span>
+                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Commandes totales</span>
                   <p className="text-2xl font-black text-gray-900 dark:text-white font-mono">{totalOrdersCount}</p>
-                  <span className="text-[10px] text-gray-500 font-mono">Commandes reçues</span>
+                  <span className="text-[10px] text-emerald-500 font-bold">{statusCounts.delivered} livrées</span>
                 </div>
                 <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/30 text-blue-500 rounded-2xl flex items-center justify-center">
                   <ShoppingBag size={22} />
@@ -850,9 +1002,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               {/* Products count */}
               <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm flex items-center justify-between">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Produits au catalogue</span>
+                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Produits catalogue</span>
                   <p className="text-2xl font-black text-gray-900 dark:text-white font-mono">{products.length}</p>
-                  <span className="text-[10px] text-gray-500">{categories.length} catégories actives</span>
+                  <span className="text-[10px] text-gray-500">{categories.length} catégories</span>
                 </div>
                 <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/30 text-purple-500 rounded-2xl flex items-center justify-center">
                   <Package size={22} />
@@ -862,7 +1014,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               {/* Active Coupons */}
               <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm flex items-center justify-between">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Codes Promo Actifs</span>
+                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Codes Promo</span>
                   <p className="text-2xl font-black text-gray-900 dark:text-white font-mono">{coupons.length}</p>
                   <span className="text-[10px] text-emerald-500 font-bold">Campagnes actives</span>
                 </div>
@@ -872,7 +1024,99 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* Quick overview of categories & products */}
+            {/* ── ANALYTICS: STATUS BREAKDOWN ── */}
+            {orders.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                {/* DONUT CHART */}
+                <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm">
+                  <h3 className="font-extrabold text-sm text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                    <Percent size={15} className="text-[#C89B3C]" />
+                    Répartition par statut
+                  </h3>
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    {/* SVG Donut */}
+                    <svg viewBox="0 0 160 160" className="w-36 h-36 shrink-0" style={{ transform: 'rotate(-90deg)' }}>
+                      {(() => {
+                        let offset = 0;
+                        const total = totalOrdersCount || 1;
+                        const r = 60;
+                        const circ = 2 * Math.PI * r;
+                        return STATUS_PALETTE.map((s) => {
+                          const count = statusCounts[s.key as keyof typeof statusCounts] || 0;
+                          const frac = count / total;
+                          const dash = frac * circ;
+                          const el = (
+                            <circle
+                              key={s.key}
+                              cx="80" cy="80" r={r}
+                              fill="none"
+                              stroke={s.color}
+                              strokeWidth="20"
+                              strokeDasharray={`${dash} ${circ - dash}`}
+                              strokeDashoffset={-offset * circ}
+                            />
+                          );
+                          offset += frac;
+                          return el;
+                        });
+                      })()}
+                      <circle cx="80" cy="80" r="48" fill="none" stroke="currentColor" strokeWidth="0" className="text-transparent" />
+                    </svg>
+                    {/* Legend */}
+                    <div className="flex flex-col gap-2 text-xs flex-1 min-w-0">
+                      {STATUS_PALETTE.map((s) => {
+                        const count = statusCounts[s.key as keyof typeof statusCounts] || 0;
+                        const pct = totalOrdersCount > 0 ? Math.round((count / totalOrdersCount) * 100) : 0;
+                        return (
+                          <div key={s.key} className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-3 h-3 rounded-full shrink-0" style={{ background: s.color }} />
+                              <span className="text-gray-600 dark:text-gray-400 truncate">{s.label}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="font-black text-gray-900 dark:text-white">{count}</span>
+                              <span className="text-gray-400">({pct}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* BAR CHART */}
+                <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm">
+                  <h3 className="font-extrabold text-sm text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                    <TrendingUp size={15} className="text-[#C89B3C]" />
+                    Commandes par statut
+                  </h3>
+                  <div className="space-y-3">
+                    {STATUS_PALETTE.map((s) => {
+                      const count = statusCounts[s.key as keyof typeof statusCounts] || 0;
+                      const pct = totalOrdersCount > 0 ? (count / totalOrdersCount) * 100 : 0;
+                      return (
+                        <div key={s.key} className="space-y-1">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 font-medium">{s.label}</span>
+                            <span className="font-black text-gray-900 dark:text-white font-mono">{count}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 dark:bg-[#1A1A1A] overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${pct}%`, background: s.color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* Quick overview: categories + recent orders */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b border-gray-100 dark:border-[#222222] pb-3">
@@ -896,7 +1140,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
 
               <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 rounded-3xl shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b border-gray-100 dark:border-[#222222] pb-3">
-                  <h3 className="font-extrabold text-gray-900 dark:text-white text-sm">Dernières commandes enregistrées</h3>
+                  <h3 className="font-extrabold text-gray-900 dark:text-white text-sm">Dernières commandes</h3>
                   <button onClick={() => setActivePanel('orders')} className="text-xs text-[#C89B3C] font-bold hover:underline">
                     Voir tout ({orders.length}) →
                   </button>
@@ -909,7 +1153,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                       <div key={o.id} className="p-3 bg-[#FDFBF7] dark:bg-black rounded-xl border border-gray-100 dark:border-[#222222] flex justify-between items-center text-xs">
                         <div>
                           <p className="font-mono font-bold text-gray-900 dark:text-white">{o.id}</p>
-                          <p className="text-[10px] text-gray-500">{o.shippingAddress.fullName} • {o.shippingAddress.wilaya}</p>
+                          <p className="text-[10px] text-gray-500">{o.shippingAddress?.fullName} • {o.shippingAddress?.wilaya}</p>
                         </div>
                         <span className="font-bold font-mono text-[#C89B3C]">{formatPrice(o.total)}</span>
                       </div>
@@ -918,6 +1162,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                 )}
               </div>
             </div>
+
           </div>
         )}
 
@@ -944,7 +1189,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                       <th className="py-3 px-4">Articles</th>
                       <th className="py-3 px-4">Total</th>
                       <th className="py-3 px-4">Statut</th>
-                      <th className="py-3 px-4 text-right">Mettre à jour</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-[#222222] text-gray-700 dark:text-gray-300">
@@ -982,17 +1227,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <select
-                            value={o.status}
-                            onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                            className="bg-[#FDFBF7] dark:bg-black border border-gray-200 dark:border-[#222222] text-xs font-bold py-1.5 px-2.5 rounded-xl text-gray-900 dark:text-white"
-                          >
-                            <option value="pending">En attente</option>
-                            <option value="confirmed">Confirmée</option>
-                            <option value="shipped">Expédiée (Yalidine)</option>
-                            <option value="delivered">Livrée</option>
-                            <option value="cancelled">Annulée</option>
-                          </select>
+                          <div className="flex items-center justify-end gap-2">
+                            <select
+                              value={o.status}
+                              onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                              className="bg-[#FDFBF7] dark:bg-black border border-gray-200 dark:border-[#222222] text-xs font-bold py-1.5 px-2.5 rounded-xl text-gray-900 dark:text-white"
+                            >
+                              <option value="pending">En attente</option>
+                              <option value="confirmed">Confirmée</option>
+                              <option value="processing">En préparation</option>
+                              <option value="shipped">Expédiée</option>
+                              <option value="out_for_delivery">En livraison</option>
+                              <option value="delivered">Livrée</option>
+                              <option value="cancelled">Annulée</option>
+                            </select>
+                            <button
+                              onClick={() => handlePrintOrder(o)}
+                              title="Imprimer le bon de commande"
+                              className="p-2 bg-[#C89B3C]/10 hover:bg-[#C89B3C] text-[#C89B3C] hover:text-black border border-[#C89B3C]/30 rounded-xl transition cursor-pointer"
+                            >
+                              <Printer size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
