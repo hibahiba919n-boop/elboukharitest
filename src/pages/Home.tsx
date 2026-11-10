@@ -390,7 +390,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Luxury bento collage */}
+         {/* Luxury bento collage */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4">
               <img
@@ -400,15 +400,15 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 referrerPolicy="no-referrer"
               />
               <img
-                src="https://images.unsplash.com/photo-1532634922-8fe0b757fb13?auto=format&fit=crop&q=80&w=400"
-                alt="Atlas mountain thyme"
+                src="https://carlawordsmithblog.com/wp-content/uploads/2016/08/spices-and-herbs.jpg"
+                alt="Spices"
                 className="w-full aspect-square object-cover rounded-2xl border border-gray-100 dark:border-[#222222]"
                 referrerPolicy="no-referrer"
               />
             </div>
             <div className="space-y-4 pt-8">
               <img
-                src="https://images.unsplash.com/photo-1532336414038-cf1905047b2b?auto=format&fit=crop&q=80&w=400"
+                src="https://spiceprofile.com/cdn/shop/articles/DALL_E_2024-08-29_12.08.01_-_A_detailed_close-up_image_of_coriander_seeds_scattered_on_a_rustic_wooden_surface._The_seeds_are_golden-brown_and_slightly_round_with_a_few_sprigs_o.webp?v=1771300148&width=533"
                 alt="Coriander spices"
                 className="w-full aspect-square object-cover rounded-2xl border border-gray-100 dark:border-[#222222]"
                 referrerPolicy="no-referrer"
