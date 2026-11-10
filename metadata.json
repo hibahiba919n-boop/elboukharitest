@@ -1,0 +1,6 @@
+{
+  "name": "توابل البوخاري - Touabel El Boukhari",
+  "description": "Boutique en ligne officielle d'épices d'exception, mélanges artisanaux et recettes traditionnelles توابل البوخاري",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
