@@ -592,9 +592,9 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                       placeholder={translate({
-                        ar: 'كود الخصم (مثال: RAMADAN20)',
-                        fr: 'Code promo (ex: RAMADAN20)',
-                        en: 'Promo code (ex: RAMADAN20)'
+                        ar: 'كود الخصم',
+                        fr: 'Code promo',
+                        en: 'Promo code'
                       })}
                       className="flex-1 bg-[#181818] border border-[#333333] focus:border-[#C89B3C] focus:outline-none px-3 py-2 rounded-lg text-xs text-white"
                     />
