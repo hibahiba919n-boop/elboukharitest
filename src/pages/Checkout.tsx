@@ -23,17 +23,12 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
   // Form Fields
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [altPhoneNumber, setAltPhoneNumber] = useState('');
   const [selectedWilaya, setSelectedWilaya] = useState('31');
   const [commune, setCommune] = useState('');
   const [address, setAddress] = useState('');
   const [deliveryType, setDeliveryType] = useState<'home' | 'office'>('home');
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card'>('cod');
-  
-  // Card mock states
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
+  // Payment method is always COD
+  const paymentMethod: 'cod' | 'card' = 'cod';
 
   // Completed order receipt cache
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
@@ -93,7 +88,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
         title: 'Adresse de livraison',
         fullName,
         phone: phoneNumber,
-        addressLine: address + (altPhoneNumber ? ` (Alt: ${altPhoneNumber})` : ''),
+        addressLine: address,
         wilaya: translate(wilayaName),
         commune
       },
@@ -111,7 +106,6 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
       })),
       fullName,
       phone: phoneNumber,
-      altPhone: altPhoneNumber,
       wilaya: selectedWilaya,
       commune,
       address,
@@ -175,10 +169,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
                       />
                     </div>
 
-                    {/* Primary Phone */}
-                    <div className="space-y-1.5">
+                    {/* Primary Phone — full width */}
+                    <div className="space-y-1.5 md:col-span-2">
                       <label className="font-bold text-gray-500">
-                        {translate({ ar: 'رقم الهاتف الأساسي *', fr: 'Numéro de téléphone principal *', en: 'Primary Phone Number *' })}
+                        {translate({ ar: 'رقم الهاتف *', fr: 'Numéro de téléphone *', en: 'Phone Number *' })}
                       </label>
                       <input
                         type="tel"
@@ -186,20 +180,6 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         placeholder="Ex: 0555 12 34 56"
-                        className="w-full bg-[#FDFBF7] dark:bg-black border border-gray-200 dark:border-[#222222] focus:border-[#C89B3C] focus:outline-none px-4 py-3.5 rounded-xl text-gray-900 dark:text-white font-mono"
-                      />
-                    </div>
-
-                    {/* Alternate Phone */}
-                    <div className="space-y-1.5">
-                      <label className="font-bold text-gray-400">
-                        {translate({ ar: 'رقم هاتف احتياطي (اختياري)', fr: 'Numéro de téléphone secondaire', en: 'Secondary Phone (Optional)' })}
-                      </label>
-                      <input
-                        type="tel"
-                        value={altPhoneNumber}
-                        onChange={(e) => setAltPhoneNumber(e.target.value)}
-                        placeholder="Ex: 0666 98 76 54"
                         className="w-full bg-[#FDFBF7] dark:bg-black border border-gray-200 dark:border-[#222222] focus:border-[#C89B3C] focus:outline-none px-4 py-3.5 rounded-xl text-gray-900 dark:text-white font-mono"
                       />
                     </div>
@@ -291,98 +271,25 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
                   </div>
                 </div>
 
-                {/* 2. Payment Method Card */}
-                <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 md:p-8 rounded-3xl shadow-sm space-y-5">
+                {/* 2. Payment Method — COD only */}
+                <div className="bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] p-6 md:p-8 rounded-3xl shadow-sm space-y-4">
                   <h3 className="text-base font-bold text-[#C89B3C] border-b border-gray-100 dark:border-[#222222] pb-3 uppercase flex items-center gap-1.5">
-                    <CreditCard size={16} />
-                    <span>{translate({ ar: 'طريقة الدفع الفاخرة', fr: 'Moyen de Paiement', en: 'Payment Option' })}</span>
+                    <Truck size={16} />
+                    <span>{translate({ ar: 'طريقة الدفع', fr: 'Moyen de Paiement', en: 'Payment Method' })}</span>
                   </h3>
-
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    {/* Cash On Delivery */}
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('cod')}
-                      className={`p-4 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
-                        paymentMethod === 'cod'
-                          ? 'border-[#C89B3C] bg-[#C89B3C]/10 text-[#C89B3C]'
-                          : 'border-gray-200 dark:border-[#222222] text-gray-500 hover:border-[#C89B3C]'
-                      }`}
-                    >
-                      <span className="font-bold">
-                        {translate({ ar: 'الدفع عند الاستلام (COD)', fr: 'Paiement à la livraison', en: 'Cash on Delivery (COD)' })}
-                      </span>
-                      <span className="text-[10px] opacity-75">
-                        {translate({ ar: 'الدفع نقداً بعد فحص جودة التوابل', fr: 'Payez cash après inspection', en: 'Pay cash after spice check' })}
-                      </span>
-                    </button>
-
-                    {/* Mock Card */}
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('card')}
-                      className={`p-4 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
-                        paymentMethod === 'card'
-                          ? 'border-[#C89B3C] bg-[#C89B3C]/10 text-[#C89B3C]'
-                          : 'border-gray-200 dark:border-[#222222] text-gray-500 hover:border-[#C89B3C]'
-                      }`}
-                    >
-                      <span className="font-bold">
-                        {translate({ ar: 'البطاقة البنكية / الذهبية', fr: 'Carte Bancaire / Dahabia', en: 'Bank Card / Dahabia' })}
-                      </span>
-                      <span className="text-[10px] opacity-75">
-                        {translate({ ar: 'دفع إلكتروني آمن ومحمي', fr: 'Paiement sécurisé crypté', en: 'Secure crypted checkout' })}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Card payment detail form (only if 'card' selected) */}
-                  {paymentMethod === 'card' && (
-                    <div className="bg-[#FDFBF7] dark:bg-black p-5 rounded-2xl border border-gray-200 dark:border-[#222222] space-y-4 text-xs animate-fade-in">
-                      <div className="relative aspect-[1.58/1] max-w-xs mx-auto bg-gradient-to-tr from-[#0F2F24] via-[#0B1B17] to-[#C89B3C] rounded-xl p-5 text-white shadow-lg flex flex-col justify-between font-mono">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[10px] font-bold text-gray-300">EL BOUKHARI PRESTIGE CARD</span>
-                          <span className="text-[#C89B3C] font-black text-sm">Dahabia</span>
-                        </div>
-                        <div className="text-sm md:text-base tracking-[0.2em]">{cardNumber || '•••• •••• •••• ••••'}</div>
-                        <div className="flex justify-between text-[10px] text-gray-300">
-                          <div>
-                            <p className="text-[7px]">CARDHOLDER</p>
-                            <p>{fullName || 'MEMBER NAME'}</p>
-                          </div>
-                          <div>
-                            <p className="text-[7px]">EXPIRES</p>
-                            <p>{cardExpiry || 'MM/YY'}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="space-y-1.5 md:col-span-2">
-                          <label className="font-bold text-gray-500">Card Number</label>
-                          <input
-                            type="text"
-                            maxLength={19}
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            placeholder="0000 0000 0000 0000"
-                            className="w-full bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] focus:border-[#C89B3C] focus:outline-none p-3 rounded-lg text-white text-xs font-mono"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="font-bold text-gray-500">Expiry (MM/YY)</label>
-                          <input
-                            type="text"
-                            maxLength={5}
-                            value={cardExpiry}
-                            onChange={(e) => setCardExpiry(e.target.value)}
-                            placeholder="12/28"
-                            className="w-full bg-white dark:bg-[#111111] border border-gray-200 dark:border-[#222222] focus:border-[#C89B3C] focus:outline-none p-3 rounded-lg text-white text-xs font-mono"
-                          />
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-4 bg-[#C89B3C]/10 border border-[#C89B3C]/30 rounded-2xl px-5 py-4">
+                    <div className="w-10 h-10 bg-[#C89B3C]/20 rounded-xl flex items-center justify-center shrink-0">
+                      <Check size={18} className="text-[#C89B3C]" />
                     </div>
-                  )}
+                    <div>
+                      <p className="font-extrabold text-sm text-gray-900 dark:text-white">
+                        {translate({ ar: 'الدفع عند الاستلام', fr: 'Paiement à la livraison', en: 'Cash on Delivery' })}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {translate({ ar: 'تدفع نقداً عند استلام طلبيتك', fr: 'Payez en espèces à la réception de votre commande', en: 'Pay cash when you receive your order' })}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -414,27 +321,27 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
                   </div>
 
                   {/* Pricing bills lists */}
-                  <div className="space-y-3.5 border-t border-b border-gray-100 dark:border-[#222222] py-4 text-xs font-sans text-gray-500">
+                  <div className="space-y-3 border-t border-b border-gray-100 dark:border-[#222222] py-4 text-xs font-sans">
                     <div className="flex justify-between">
-                      <span>{translate({ ar: 'المجموع الفرعي للبهارات', fr: 'Total Brut', en: 'Items Subtotal' })}</span>
-                      <span className="font-mono font-bold text-white">{formatPrice(cartSubtotal)}</span>
+                      <span className="text-gray-600 dark:text-gray-400">{translate({ ar: 'مجموع المنتجات', fr: 'Total Brut', en: 'Items Subtotal' })}</span>
+                      <span className="font-mono font-bold text-gray-900 dark:text-white">{formatPrice(cartSubtotal)}</span>
                     </div>
                     {activeCoupon && (
-                      <div className="flex justify-between text-emerald-500 font-semibold">
-                        <span>{translate({ ar: 'مبلغ الخصم المقتطع', fr: 'Code Promo Déduit', en: 'Discount amount' })}</span>
+                      <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span>{translate({ ar: 'مبلغ الخصم', fr: 'Code Promo Déduit', en: 'Discount amount' })}</span>
                         <span className="font-mono">-{formatPrice(discountAmount)}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span>{translate({ ar: 'تكلفة شحن الولاية', fr: 'Frais de livraison', en: 'Shipping rate' })}</span>
-                      <span className="font-mono font-bold text-white">
+                      <span className="text-gray-600 dark:text-gray-400">{translate({ ar: 'تكلفة الشحن', fr: 'Frais de livraison', en: 'Shipping' })}</span>
+                      <span className="font-mono font-bold text-gray-900 dark:text-white">
                         {shippingFee === 0 ? translate({ ar: 'مجاني', fr: 'Gratuit', en: 'Free' }) : formatPrice(shippingFee)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-sm text-white">{translate({ ar: 'المجموع الإجمالي المستحق', fr: 'Total à payer', en: 'Grand Total' })}</span>
+                  <div className="flex justify-between items-center bg-[#111111] dark:bg-black rounded-2xl px-4 py-4">
+                    <span className="font-bold text-sm text-white">{translate({ ar: 'المجموع الإجمالي', fr: 'Total à payer', en: 'Grand Total' })}</span>
                     <span className="font-mono text-xl font-black text-[#C89B3C]">{formatPrice(finalTotal)}</span>
                   </div>
 

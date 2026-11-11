@@ -224,7 +224,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                       type="text"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder={translate({ ar: 'كود الخصم (RAMADAN20)', fr: 'Code Promo (RAMADAN20)', en: 'Promo Code' })}
+                      placeholder={translate({ ar: 'كود الخصم', fr: 'Code promo', en: 'Promo Code' })}
                       className="flex-1 bg-[#FDFBF7] dark:bg-black border border-gray-200 dark:border-[#222222] focus:border-[#C89B3C] focus:outline-none px-4 py-3 rounded-xl text-xs text-white"
                     />
                     <button
@@ -240,7 +240,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                 <div className="space-y-3.5 border-t border-b border-gray-100 dark:border-[#222222] py-4 text-xs font-sans text-gray-600 dark:text-gray-400">
                   <div className="flex justify-between">
                     <span>{translate({ ar: 'المجموع الفرعي', fr: 'Sous-total articles', en: 'Subtotal items' })}</span>
-                    <span className="font-mono font-bold text-white">{formatPrice(cartSubtotal)}</span>
+                    <span className="font-mono font-bold text-gray-900 dark:text-white">{formatPrice(cartSubtotal)}</span>
                   </div>
                   {activeCoupon && (
                     <div className="flex justify-between text-emerald-500 font-semibold">
@@ -250,7 +250,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                   )}
                   <div className="flex justify-between">
                     <span>{translate({ ar: 'تكلفة شحن الموقع', fr: 'Frais d\'expédition', en: 'Shipping' })}</span>
-                    <span className="font-mono font-bold text-white">
+                    <span className="font-mono font-bold text-gray-900 dark:text-white">
                       {shippingFee === 0 ? translate({ ar: 'مجاني', fr: 'Gratuit', en: 'Free' }) : formatPrice(shippingFee)}
                     </span>
                   </div>
@@ -271,7 +271,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onNavigate }) => {
                 </div>
 
                 <div className="flex justify-between items-center py-2">
-                  <span className="font-bold text-white">{translate({ ar: 'الإجمالي النهائي المتبقي', fr: 'Total à Payer', en: 'Grand Total' })}</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{translate({ ar: 'الإجمالي النهائي', fr: 'Total à Payer', en: 'Grand Total' })}</span>
                   <span className="font-mono text-2xl font-black text-[#C89B3C]">{formatPrice(cartTotal)}</span>
                 </div>
 
